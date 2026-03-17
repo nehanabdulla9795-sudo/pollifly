@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pollifly - Autonomous Pollination Drone</title>
+  <meta name="description" content="Pollifly is an autonomous pollination drone engineered to restore crop pollination and secure global food security." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lato:wght@300;400;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #e8c840;
+      --gold-dark: #d4b835;
+      --bg-deep: #0a0f0a;
+      --bg-card: #0e1a0e;
+      --bg-section: #0d1a0d;
+      --border: #1a2a1a;
+      --text-main: #e8e8e8;
+      --text-muted: #a8a8a8;
+      --green-muted: #6b8e6b;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg-deep);
+      color: var(--text-main);
+      font-family: 'Lato', sans-serif;
+      font-weight: 400;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── POLLEN PARTICLES ── */
+    @keyframes float {
+      0%   { opacity: 0; transform: translateY(0) translateX(0); }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-100vh) translateX(80px); }
+    }
+    .pollen-particle {
+      position: fixed;
+      border-radius: 50%;
+      width: 4px; height: 4px;
+      background: var(--gold);
+      pointer-events: none;
+      animation: linear infinite float;
+      z-index: 1;
+    }
+
+    /* ── SCROLL REVEAL ── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .reveal {
+      opacity: 0;
+      animation: fadeInUp 0.75s ease-out forwards;
+      animation-play-state: paused;
+    }
+    .reveal.visible { animation-play-state: running; }
+
+    /* ── LOGO SVG BADGE ── */
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .logo-badge svg { display: block; }
+
+    /* ── HEADER ── */
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(10,15,10,0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(26,42,26,0.8);
+      transition: background 0.3s;
+    }
+
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-logo { text-decoration: none; }
+
+    nav { display: flex; gap: 2.25rem; align-items: center; }
+    nav a {
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: rgba(232,232,232,0.8);
+      text-decoration: none;
+      transition: color 0.25s;
+    }
+    nav a:hover { color: #fff; }
+
+    /* ── PILL LABEL ── */
+    .pill {
+      display: inline-block;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(232,200,64,0.12);
+      border: 1px solid rgba(232,200,64,0.3);
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background-image: url('https://d2xsxph8kpxj0f.cloudfront.net/310519663409074292/nX4gFMCDwviTgsaf7casq6/pollifly-hero-bg-VEy85KiV7doKi7ekVb78Qi.webp');
+      background-size: cover;
+      background-position: center 40%;
+    }
+    .hero-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, rgba(10,15,10,0.93) 38%, rgba(10,15,10,0.35) 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      width: 100%;
+      padding-top: 5rem;
+    }
+    .hero-eyebrow {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.5rem;
+      opacity: 0.9;
+    }
+    .hero-title {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(3rem, 6.5vw, 5.5rem);
+      font-weight: 600;
+      line-height: 1.07;
+      letter-spacing: -0.02em;
+      color: #fff;
+      max-width: 680px;
+      margin-bottom: 1.5rem;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+    .hero-sub {
+      font-size: 1.1rem;
+      color: rgba(232,232,232,0.72);
+      max-width: 460px;
+      margin-bottom: 2.5rem;
+      line-height: 1.7;
+    }
+    .hero-buttons { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    .btn-gold {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--gold);
+      color: #0a0f0a;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.9rem 2rem;
+      border: none; cursor: pointer;
+      text-decoration: none;
+      border-radius: 2px;
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s;
+    }
+    .btn-gold:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(232,200,64,0.28);
+    }
+    .btn-outline-gold {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: transparent;
+      color: var(--gold);
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.9rem 2rem;
+      border: 1.5px solid rgba(232,200,64,0.55);
+      cursor: pointer;
+      text-decoration: none;
+      border-radius: 2px;
+      transition: background 0.25s, border-color 0.25s;
+    }
+    .btn-outline-gold:hover {
+      background: rgba(232,200,64,0.08);
+      border-color: var(--gold);
+    }
+
+    /* Scroll indicator */
+    .scroll-cue {
+      position: absolute;
+      bottom: 2rem; left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      opacity: 0.55;
+      color: var(--text-muted);
+    }
+    .scroll-cue span {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.62rem; letter-spacing: 0.2em; text-transform: uppercase;
+    }
+    @keyframes scrollDrop {
+      0%, 100% { transform: translateY(0); opacity: 0.6; }
+      50%       { transform: translateY(6px); opacity: 1; }
+    }
+    .scroll-cue svg { animation: scrollDrop 1.8s ease-in-out infinite; }
+
+    /* ── SECTION HELPERS ── */
+    .section-pad { padding: 5rem 2rem; max-width: 1280px; margin: 0 auto; }
+    .section-pad-wide { padding: 5rem 2rem; }
+
+    /* Horizontal rule */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 3.5rem 0;
+    }
+
+    /* ── MISSION / PROBLEM ── */
+    #problem { background: var(--bg-deep); }
+    .problem-inner { max-width: 860px; margin: 0 auto; padding: 6rem 2rem; text-align: center; }
+    .problem-title {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+      font-weight: 600;
+      color: #fff;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin: 1.5rem 0 2rem;
+    }
+    .problem-body {
+      color: rgba(232,232,232,0.7);
+      font-size: 1.05rem;
+      line-height: 1.78;
+      max-width: 700px;
+      margin: 0 auto 1.5rem;
+    }
+
+    /* ── VISION SECTION ── */
+    .vision-label-row {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .vision-label-row .vline {
+      height: 1px; background: var(--border); flex: 1;
+    }
+    .vision-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold);
+    }
+    .vision-title {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 600; color: #fff; line-height: 1.2;
+      letter-spacing: -0.02em;
+      max-width: 780px; margin: 0 auto 1rem;
+      text-align: center;
+    }
+
+    /* ── BITTERGOURD / CRISIS ── */
+    #crisis {
+      position: relative; min-height: 65vh;
+      display: flex; align-items: center;
+    }
+    .crisis-bg {
+      position: absolute; inset: 0;
+      background-image: url('https://d2xsxph8kpxj0f.cloudfront.net/310519663409074292/nX4gFMCDwviTgsaf7casq6/pollifly-bittergourd-flowers-h5LnhB8mjXFCKk9kkNEwoN.webp');
+      background-size: cover; background-position: center;
+    }
+    .crisis-overlay {
+      position: absolute; inset: 0;
+      background: rgba(10,15,10,0.65);
+    }
+    .crisis-content {
+      position: relative; z-index: 2;
+      max-width: 1280px; margin: 0 auto;
+      padding: 5rem 2rem; text-align: center;
+    }
+    .crisis-title {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      font-weight: 600; color: #fff; line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+    .crisis-sub {
+      font-size: 1rem;
+      color: rgba(232,232,232,0.72);
+      max-width: 540px;
+      margin: 1.5rem auto 0;
+      line-height: 1.7;
+    }
+
+    /* ── MEET POLLIFLY ── */
+    #meet { background: var(--bg-section); }
+    .meet-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .meet-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      nav { display: none; }
+    }
+    .drone-wrap { position: relative; }
+    .drone-wrap img {
+      width: 100%; display: block;
+      border-radius: 6px;
+      filter: drop-shadow(0 0 50px rgba(232,200,64,0.1));
+    }
+    .drone-caption {
+      position: absolute; bottom: 1rem; left: 1rem;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: rgba(232,232,232,0.55);
+      background: rgba(10,15,10,0.82);
+      padding: 0.38rem 0.7rem; border-radius: 2px;
+      border: 1px solid rgba(232,200,64,0.25);
+    }
+    .meet-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1.1rem;
+    }
+    .meet-title {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 600; color: #fff; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 1.5rem;
+    }
+    .meet-body { color: var(--text-muted); font-size: 0.97rem; line-height: 1.75; margin-bottom: 1.5rem; }
+    .feat-list { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
+    .feat-list li {
+      display: flex; align-items: flex-start; gap: 0.7rem;
+      font-size: 0.93rem; color: var(--text-muted);
+    }
+    .feat-list li::before {
+      content: '';
+      flex-shrink: 0; width: 5px; height: 5px;
+      border-radius: 50%; background: var(--gold);
+      margin-top: 0.55rem;
+    }
+
+    /* ── HOW IT WORKS — horizontal cards ── */
+    #process { background: var(--bg-deep); }
+    .process-header { text-align: center; margin-bottom: 3.5rem; }
+    .process-header h2 {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 600; color: #fff; line-height: 1.12;
+      letter-spacing: -0.02em; margin: 1.25rem 0 1rem;
+    }
+    .process-header p { color: var(--text-muted); font-size: 1rem; max-width: 580px; margin: 0 auto; }
+    .process-header .gold-line {
+      color: var(--gold);
+      font-style: italic;
+    }
+
+    .process-cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    @media (max-width: 900px) {
+      .process-cards { grid-template-columns: 1fr; }
+    }
+    .pc {
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 1.75rem 1.5rem 2rem;
+      position: relative;
+      transition: background 0.25s;
+    }
+    .pc:last-child { border-right: none; }
+    .pc:hover { background: rgba(20,35,20,0.9); }
+    .pc-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(232,200,64,0.12);
+      border: 1px solid rgba(232,200,64,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.75rem; font-weight: 700;
+      color: var(--gold); margin-bottom: 1.25rem;
+    }
+    .pc-icon {
+      position: absolute; top: 1.5rem; right: 1.5rem;
+      opacity: 0.5;
+    }
+    .pc-icon svg { width: 18px; height: 18px; color: var(--gold); }
+    .pc-title {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.1rem; font-weight: 600;
+      color: #fff; line-height: 1.25; margin-bottom: 0.75rem;
+    }
+    .pc-body { color: var(--text-muted); font-size: 0.83rem; line-height: 1.65; }
+
+    /* Arrow between cards (desktop only) */
+    .pc-arrow {
+      position: absolute; right: -1px; top: 50%;
+      transform: translateY(-50%);
+      color: rgba(232,200,64,0.35);
+    }
+
+    /* ── ENGINEERING / TECH MODULES (visual bg section) ── */
+    #engineering {
+      position: relative;
+      background: var(--bg-section);
+      overflow: hidden;
+    }
+    .eng-bg-abs {
+      position: absolute; inset: 0;
+      background-image: url('https://d2xsxph8kpxj0f.cloudfront.net/310519663409074292/nX4gFMCDwviTgsaf7casq6/pollifly-tech-abstract-HfBPtn5MtPDQ2ajc8scBMC.webp');
+      background-size: cover; background-position: center;
+      opacity: 0.05; pointer-events: none;
+    }
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 1.25rem; margin-top: 3rem;
+    }
+    .mod {
+      background: rgba(14,26,14,0.85);
+      border: 1px solid var(--border);
+      border-radius: 4px; padding: 1.75rem;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+    .mod:hover { border-color: rgba(232,200,64,0.4); transform: translateY(-3px); }
+    .mod-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(232,200,64,0.1);
+      border: 1px solid rgba(232,200,64,0.3);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.1rem;
+    }
+    .mod-icon svg { width: 18px; height: 18px; color: var(--gold); }
+    .mod-title {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.15rem; font-weight: 600;
+      color: #fff; margin-bottom: 0.65rem;
+    }
+    .mod-body { color: var(--text-muted); font-size: 0.88rem; line-height: 1.65; }
+    .mod-tag {
+      display: inline-block; margin-top: 1.1rem;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.62rem; letter-spacing: 0.13em; text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(232,200,64,0.32);
+      padding: 0.22rem 0.55rem; border-radius: 2px;
+    }
+
+    /* ── TECHNICAL SPECS ── */
+    #specs { background: var(--bg-deep); }
+    .specs-label {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1.1rem;
+    }
+    .specs-title {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 600; color: #fff; line-height: 1.15;
+      letter-spacing: -0.02em; margin-bottom: 0.85rem;
+    }
+    .specs-sub { color: var(--text-muted); font-size: 0.97rem; line-height: 1.72; margin-bottom: 2.5rem; }
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    @media (max-width: 900px) { .specs-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .specs-grid { grid-template-columns: 1fr; } }
+    .spec-cell {
+      background: var(--bg-card);
+      padding: 1.6rem 1.75rem;
+    }
+    .spec-lbl {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.66rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 0.55rem;
+    }
+    .spec-val {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.35rem; font-weight: 600;
+      color: #fff; line-height: 1.2; margin-bottom: 0.3rem;
+    }
+    .spec-det { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── PROJECT STATUS ── */
+    #status { background: var(--bg-section); }
+    .status-header { text-align: center; margin-bottom: 3rem; }
+    .status-header h2 {
+      font-family: 'Crimson Text', serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 600; color: #fff; line-height: 1.12;
+      letter-spacing: -0.02em; margin: 1.1rem 0 0;
+    }
+    .status-header h2 em { font-style: italic; color: var(--gold); }
+    .status-cards {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    @media (max-width: 768px) { .status-cards { grid-template-columns: 1fr; } }
+    .sc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px; padding: 2rem;
+      transition: border-color 0.25s;
+    }
+    .sc:hover { border-color: rgba(232,200,64,0.3); }
+    .sc-icon {
+      width: 48px; height: 48px;
+      border-radius: 8px;
+      background: rgba(232,200,64,0.1);
+      border: 1px solid rgba(232,200,64,0.3);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .sc-icon svg { width: 22px; height: 22px; color: var(--gold); }
+    .sc-title {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.4rem; font-weight: 600;
+      color: #fff; margin-bottom: 0.75rem;
+    }
+    .sc-body { color: var(--text-muted); font-size: 0.9rem; line-height: 1.65; }
+    .sc-list { list-style: none; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.55rem; }
+    .sc-list li {
+      display: flex; align-items: flex-start; gap: 0.6rem;
+      font-size: 0.88rem; color: rgba(232,232,232,0.72);
+    }
+    .sc-list li::before {
+      content: ''; flex-shrink: 0;
+      width: 6px; height: 6px;
+      border-radius: 50%; background: var(--gold);
+      margin-top: 0.45rem;
+    }
+    .sc-badge {
+      display: inline-block; margin-top: 1.25rem;
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase;
+      background: rgba(232,200,64,0.12);
+      color: var(--gold);
+      border: 1px solid rgba(232,200,64,0.35);
+      padding: 0.28rem 0.75rem; border-radius: 2px;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+    }
+    .footer-top {
+      max-width: 1280px; margin: 0 auto;
+      padding: 3.5rem 2rem;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 3rem;
+    }
+    @media (max-width: 768px) { .footer-top { grid-template-columns: 1fr; } }
+    .footer-brand { display: flex; flex-direction: column; gap: 1rem; }
+    .footer-tagline { font-size: 0.9rem; color: var(--text-muted); line-height: 1.65; max-width: 260px; }
+    .footer-col-title {
+      font-family: 'Courier Prime', monospace;
+      font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 1rem;
+    }
+    .footer-list { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+    .footer-list li {
+      display: flex; align-items: center; gap: 0.55rem;
+      font-size: 0.88rem; color: rgba(232,232,232,0.65);
+    }
+    .footer-list li::before {
+      content: ''; flex-shrink: 0;
+      width: 5px; height: 5px;
+      border-radius: 50%; background: var(--gold); opacity: 0.7;
+    }
+    .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+    .footer-links a { font-size: 0.88rem; color: rgba(232,232,232,0.65); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      max-width: 1280px; margin: 0 auto;
+      padding: 1.25rem 2rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 0.5rem;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-muted); }
+    .footer-motto { font-family: 'Crimson Text', serif; font-size: 0.95rem; font-style: italic; color: rgba(232,232,232,0.45); }
+  </style>
+</head>
+<body>
+
+<!-- Pollen particles -->
+<div id="particles" aria-hidden="true"></div>
+
+<!-- ══════════════════════════════════
+     HEADER
+══════════════════════════════════ -->
+<header id="site-header">
+  <div class="header-inner">
+    <a href="#hero" class="header-logo" aria-label="Pollifly home">
+      <img src="pollifly_logo.png" alt="Pollifly" style="height:44px;width:44px;border-radius:50%;object-fit:cover;display:block;" />
+    </a>
+    <nav>
+      <a href="#problem">Problem</a>
+      <a href="#meet">Solution</a>
+      <a href="#process">How It Works</a>
+      <a href="#specs">Specs</a>
+      <a href="#status">Mission</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════
+     HERO
+══════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content reveal">
+    <p class="hero-eyebrow">Autonomous · Pollination · Drone</p>
+    <h1 class="hero-title">
+      When nature needs<br>a hand, <em>we fly.</em>
+    </h1>
+    <p class="hero-sub">Pollifly is an autonomous pollination drone engineered to restore crop pollination and secure global food security.</p>
+    <div class="hero-buttons">
+      <a href="#meet" class="btn-gold">Discover the Solution</a>
+      <a href="#specs" class="btn-outline-gold">View Specifications</a>
+    </div>
+  </div>
+  <div class="scroll-cue" aria-hidden="true">
+    <span>Scroll</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 5v14M5 12l7 7 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     PROBLEM / MISSION
+══════════════════════════════════ -->
+<section id="problem">
+  <div class="problem-inner">
+    <div class="reveal">
+      <span class="pill">Our Mission</span>
+      <h2 class="problem-title">What happens to our food<br>when the bees are gone?</h2>
+      <p class="problem-body">Pollifly was born from a simple but urgent question. Our mission is to build intelligent, deployable technology that compensates for the loss of natural pollinators and puts the power of reliable crop pollination back into the hands of farmers.</p>
+      <p class="problem-body">We believe that the future of agriculture must be resilient, autonomous, and deeply connected to the rhythms of nature. Pollifly is our first step toward that future — small in size, but significant in purpose.</p>
+    </div>
+
+    <hr class="divider">
+
+    <div class="reveal">
+      <div class="vision-label-row">
+        <div class="vline"></div>
+        <span class="vision-label">The Vision</span>
+        <div class="vline"></div>
+      </div>
+      <p class="vision-title">A world where technology and nature work in harmony to ensure food security for all</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     CRISIS / BITTERGOURD BG
+══════════════════════════════════ -->
+<section id="crisis">
+  <div class="crisis-bg"></div>
+  <div class="crisis-overlay"></div>
+  <div class="crisis-content reveal">
+    <h2 class="crisis-title">When the bees disappear,<br>our food follows.</h2>
+    <p class="crisis-sub">Over 75% of the world's flowering plant species depend on pollinators. As bee populations collapse under the weight of pesticides, habitat loss and climate change, the crops we depend on are left without their most essential partner.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     MEET POLLIFLY
+══════════════════════════════════ -->
+<section id="meet">
+  <div class="section-pad">
+    <div class="meet-grid">
+      <div class="drone-wrap reveal">
+        <span class="drone-caption">Unit P-01 · Prototype</span>
+        <img src="https://d2xsxph8kpxj0f.cloudfront.net/310519663409074292/nX4gFMCDwviTgsaf7casq6/Gemini_Generated_Image_tcksm4tcksm4tcks_ba1c883e.png"
+             alt="Pollifly autonomous drone illustration" />
+      </div>
+      <div class="reveal">
+        <p class="meet-label">Meet Pollifly</p>
+        <h2 class="meet-title">Precision-engineered for the garden of tomorrow</h2>
+        <p class="meet-body">Pollifly is a miniature, quadrotor-inspired drone weighing under 50 grams. It navigates autonomously through crop rows using onboard computer vision, identifies flowering plants, and delivers targeted vibration pollination — all without human intervention.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     HOW IT WORKS
+══════════════════════════════════ -->
+<section id="process">
+  <div class="section-pad">
+    <div class="process-header reveal">
+      <span class="pill">How It Works</span>
+      <h2>The Pollination<br><span class="gold-line">Process</span></h2>
+      <p>From deployment to mission completion, here's how Pollifly autonomously restores crop pollination.</p>
+    </div>
+    <div class="process-cards reveal">
+
+      <div class="pc">
+        <div class="pc-num">1</div>
+        <div class="pc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <p class="pc-title">Field Deployment</p>
+        <p class="pc-body">The Pollifly drone is deployed at the field or greenhouse in the early morning, launched from a solar-powered base station with a pre-planned GPS route.</p>
+      </div>
+
+      <div class="pc">
+        <div class="pc-num">2</div>
+        <div class="pc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 20.25v-2.25M9 9.75V4.5M15 20.25v-6M15 9.75V4.5M4.5 12h15" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <p class="pc-title">Autonomous Navigation</p>
+        <p class="pc-body">Using optical flow sensor for horizontal stability and ToF sensors for altitude, Pollifly glides through rows at a controlled height of 20–30 cm above the canopy.</p>
+      </div>
+
+      <div class="pc">
+        <div class="pc-num">3</div>
+        <div class="pc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="7" stroke-dasharray="2 3"/>
+          </svg>
+        </div>
+        <p class="pc-title">Flower Detection</p>
+        <p class="pc-body">The onboard OV2640 camera streams live video to a lightweight computer vision model that identifies open female flowers in real time.</p>
+      </div>
+
+      <div class="pc">
+        <div class="pc-num">4</div>
+        <div class="pc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <p class="pc-title">Vibration Pollination</p>
+        <p class="pc-body">Upon confirming a female flower target, the drone hovers precisely and activates a motorized brush that vibrates to mimic natural bee buzz pollination.</p>
+      </div>
+
+      <div class="pc">
+        <div class="pc-num">5</div>
+        <div class="pc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M8.288 15.038a5.25 5.25 0 017.424 0M5.106 11.856c3.807-3.808 9.98-3.808 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0M12.53 18.22l-.53.53-.53-.53a.75.75 0 011.06 0z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <p class="pc-title">Mission Logging</p>
+        <p class="pc-body">Flight data, pollination events, and success metrics are transmitted wirelessly to the base station and synced to the cloud dashboard for farmer review.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     TECHNICAL SPECS
+══════════════════════════════════ -->
+<section id="specs">
+  <div class="section-pad">
+    <div class="reveal">
+      <p class="specs-label">Technical Specifications</p>
+      <h2 class="specs-title">Engineering specifications</h2>
+      <p class="specs-sub">Detailed technical parameters for the Pollifly P-01 prototype platform.</p>
+    </div>
+    <div class="specs-grid reveal">
+      <div class="spec-cell">
+        <p class="spec-lbl">Connectivity</p>
+        <p class="spec-val">Wi-Fi 6 + LoRa</p>
+        <p class="spec-det">Mesh networking; 5 km LoRa range to base station</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Camera</p>
+        <p class="spec-val">4K / 60fps</p>
+        <p class="spec-det">Wide-angle, 120° FOV, rolling shutter global sync</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">IMU</p>
+        <p class="spec-val">MPU6050</p>
+        <p class="spec-det">3-axis gyroscope, 3-axis accelerometer</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Motors</p>
+        <p class="spec-val">4× 720 coreless</p>
+        <p class="spec-det">DC brushed motors with PWM control</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Battery</p>
+        <p class="spec-val">1S 3.7V LiPo</p>
+        <p class="spec-det">300–500 mAh, USB Type-C charging</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Flight Time</p>
+        <p class="spec-val">5–8 min</p>
+        <p class="spec-det">Per charge cycle at standard payload</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">All-Up Weight</p>
+        <p class="spec-val">90–120 g</p>
+        <p class="spec-det">Including 3D-printed parts and sensors</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Pollination Mechanism</p>
+        <p class="spec-val">Vibrating brush</p>
+        <p class="spec-det">Motorized brush with synthetic bristles</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Operating Environments</p>
+        <p class="spec-val">Field &amp; Greenhouse</p>
+        <p class="spec-det">Open agricultural fields and polyhouse environments</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Firmware</p>
+        <p class="spec-val">ESP-Drone</p>
+        <p class="spec-det">Open-source, Crazyflie-based stack</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Vibration Frequency</p>
+        <p class="spec-val">230 Hz (nom.)</p>
+        <p class="spec-det">Tunable 200–260 Hz via adaptive control</p>
+      </div>
+      <div class="spec-cell">
+        <p class="spec-lbl">Regulatory</p>
+        <p class="spec-val">EASA Cat. A1</p>
+        <p class="spec-det">CE marking in progress; geofenced corridors</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     PROJECT STATUS
+══════════════════════════════════ -->
+<section id="status">
+  <div class="section-pad">
+    <div class="status-header reveal">
+      <span class="pill">Project Status</span>
+      <h2>Where We Are<br><em>Today</em></h2>
+    </div>
+    <div class="status-cards">
+
+      <div class="sc reveal">
+        <div class="sc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="sc-title">Current Stage</h3>
+        <p class="sc-body">Concept and early prototype phase with active development and testing of core systems.</p>
+        <span class="sc-badge">Prototype</span>
+      </div>
+
+      <div class="sc reveal">
+        <div class="sc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="sc-title">Active Development</h3>
+        <ul class="sc-list">
+          <li>Hardware integration</li>
+          <li>CV model training</li>
+          <li>Mechanism calibration</li>
+        </ul>
+      </div>
+
+      <div class="sc reveal">
+        <div class="sc-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6.115 5.19l.319 1.913A6 6 0 008.11 10.36L9.75 12l-.387.775c-.217.433-.132.956.21 1.298l1.348 1.348c.21.21.329.497.329.795v1.089c0 .426.24.815.622 1.006l.153.076c.433.217.956.132 1.298-.21l.723-.723a8.7 8.7 0 002.288-4.042 1.087 1.087 0 00-.358-1.099l-1.33-1.108c-.251-.21-.582-.299-.905-.245l-1.17.195a1.125 1.125 0 01-.98-.314l-.295-.295a1.125 1.125 0 010-1.591l.13-.132a1.125 1.125 0 011.3-.21l.603.302a.809.809 0 001.086-1.086L14.25 7.5l1.256-.837a4.5 4.5 0 001.528-1.732l.146-.292M6.115 5.19A9 9 0 1017.18 4.64M6.115 5.19A8.965 8.965 0 0112 3c1.929 0 3.716.607 5.18 1.64" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="sc-title">Target Environments</h3>
+        <ul class="sc-list">
+          <li>Open agricultural fields</li>
+          <li>Greenhouses</li>
+          <li>Polyhouse environments</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     FOOTER
+══════════════════════════════════ -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand reveal">
+      <img src="pollifly_logo.png" alt="Pollifly" style="height:80px;width:80px;border-radius:50%;object-fit:cover;display:block;" />
+      <p class="footer-tagline">An autonomous pollination drone engineered to restore crop pollination and secure global food security.</p>
+    </div>
+
+    <div class="reveal">
+      <p class="footer-col-title">Project Status</p>
+      <ul class="footer-list">
+        <li>Concept / Early Prototype</li>
+        <li>Active Development</li>
+        <li>Open Fields &amp; Greenhouses</li>
+      </ul>
+    </div>
+
+    <div class="reveal">
+      <p class="footer-col-title">Quick Links</p>
+      <ul class="footer-links">
+        <li><a href="#problem">The Problem</a></li>
+        <li><a href="#meet">The Solution</a></li>
+        <li><a href="#process">How It Works</a></li>
+        <li><a href="#specs">Specifications</a></li>
+        <li><a href="#status">Mission</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p class="footer-copy">&copy; 2026 Pollifly. All rights reserved.</p>
+    <p class="footer-motto">When nature needs a hand, we fly.</p>
+  </div>
+</footer>
+
+<script>
+  // Pollen particles
+  const pc = document.getElementById('particles');
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div');
+    p.className = 'pollen-particle';
+    p.style.cssText = `left:${Math.random()*100}vw;top:${Math.random()*100}vh;animation-duration:${10+Math.random()*18}s;animation-delay:${Math.random()*20}s;opacity:0;`;
+    pc.appendChild(p);
+  }
+
+  // Scroll reveal
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // Header scroll tint
+  const hdr = document.getElementById('site-header');
+  window.addEventListener('scroll', () => {
+    hdr.style.background = window.scrollY > 60 ? 'rgba(10,15,10,0.97)' : 'rgba(10,15,10,0.85)';
+  }, { passive: true });
+</script>
+</body>
+</html>
